@@ -13,8 +13,8 @@ add your keys to ./keys/
 
 paytend_public.pem
 paytend_private.pem
-my_public.pem
-my_private.pem
+partner_public.pem
+partner_private.pem
 ```
 
 To run:
