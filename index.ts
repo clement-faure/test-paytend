@@ -3,8 +3,7 @@ import * as crypto from "crypto";
 import fs from "fs";
 
 export class Paytend {
-  static PAYTEND_BASE_URL =
-    process.env.PAYTEND_BASE_URL || "https://sandbox-api.paytend.com";
+  static PAYTEND_BASE_URL = "https://sandbox-api.paytend.com";
 
   static PAYTEND_PUBLIC_KEY_PEM = fs.readFileSync(
     "./keys/paytend_public.pem",
@@ -26,9 +25,6 @@ export class Paytend {
 
   static PAYTEND_MERCHANT_ID = "312006000003933";
   static PAYTEND_PARTNER_ID = "312006000004128";
-
-  static MAX_ENCRYPT_BLOCK = 117;
-  static MAX_DECRYPT_BLOCK = 128;
 
   private static utf8Encode(data: string) {
     return Buffer.from(data, "utf8");
@@ -105,12 +101,33 @@ export class Paytend {
     return encrypted;
   }
 
+  private static decrypt(content: string, encryptKey: string) {
+    const DECRYPT_ALGORITHM = "aes-128-ecb";
+
+    const key = this.base64Decode(encryptKey);
+
+    const decipher = crypto.createDecipheriv(DECRYPT_ALGORITHM, key, null);
+    decipher.setAutoPadding(true);
+
+    let decrypted = decipher.update(content, "base64", "utf8");
+    decrypted += decipher.final("utf8");
+
+    return decrypted;
+  }
+
   private static signWithPrivateKey(content: string) {
     const sign = crypto.createSign("SHA256");
     sign.update(content);
     const signature = sign.sign(this.PARTNER_PRIVATE_KEY_PEM, "base64");
 
     return signature;
+  }
+
+  private static verifyWithPublicKey(content: string, signature: string) {
+    const verify = crypto.createVerify("SHA256");
+    verify.update(content);
+    const publicKey = fs.readFileSync("./keys/partner_public.pem", "utf8");
+    return verify.verify(publicKey, signature, "base64");
   }
 
   private static generateSignatureFromBody(body: Record<string, unknown>) {
@@ -134,8 +151,9 @@ export class Paytend {
     member: any;
   }) {
     try {
-      // const aesKey = this.getRandomAESKey();
-      const aesKey = "dM4B1HjIZcJskATkjxhqhA=="; // FIXED VALUE FOR PREDICTABLE TESTING
+      const aesKey = this.getRandomAESKey();
+
+      console.log("AES KEY:", aesKey);
 
       const body: Record<string, unknown> = {
         requestId: transactionId, // 32 characters long
@@ -150,12 +168,16 @@ export class Paytend {
           currency: "EUR",
           cardType: 10,
           email: "test@test.com",
-          // goodsDesc: "test", FIXME: Different error message when passing goodsDesc
         },
       };
 
       // The signature source string is composed of all non-empty field contents except the signature field, sorted according to the ASCII code of the message field, and connected with the "&" symbol in the manner of "field name = field value".
       body.signature = this.generateSignatureFromBody(body);
+
+      console.log(
+        "DECRYPTED ENCRYPTED BIZDATA:",
+        this.decrypt(this.encrypt(JSON.stringify(body.bizData), aesKey), aesKey)
+      );
 
       // Encrypted by randomly generated AES KEY.
       body.bizData = this.encrypt(JSON.stringify(body.bizData), aesKey);
@@ -165,7 +187,7 @@ export class Paytend {
 
       const bodyString = JSON.stringify(body, null, 2);
 
-      console.log("bodyString", bodyString);
+      console.log("REQUEST: ", bodyString);
 
       const response = await axios.post(
         this.PAYTEND_BASE_URL + "/wave/payment",
@@ -178,9 +200,9 @@ export class Paytend {
       );
 
       if (response.status === 200) {
-        console.log("SUCCESS", JSON.stringify(response.data, null, 2));
+        console.log("RESULT:", JSON.stringify(response.data, null, 2));
       } else {
-        console.error("ERROR", JSON.stringify(response.data, null, 2));
+        console.error("ERROR: ", JSON.stringify(response.data, null, 2));
       }
     } catch (error) {
       console.error("paytend error createPaymentLink", error?.message);
