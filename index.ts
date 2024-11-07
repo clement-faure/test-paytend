@@ -7,31 +7,31 @@ export class Paytend {
 
   static PAYTEND_PUBLIC_KEY_PEM = fs.readFileSync(
     "./keys/paytend_public.pem",
-    "utf8"
+    "utf-8"
   );
   static PAYTEND_PRIVATE_KEY_PEM = fs.readFileSync(
     "./keys/paytend_private.pem",
-    "utf8"
+    "utf-8"
   );
 
   static PARTNER_PUBLIC_KEY_PEM = fs.readFileSync(
     "./keys/partner_public.pem",
-    "utf8"
+    "utf-8"
   );
   static PARTNER_PRIVATE_KEY_PEM = fs.readFileSync(
     "./keys/partner_private.pem",
-    "utf8"
+    "utf-8"
   );
 
   static PAYTEND_MERCHANT_ID = "312006000003933";
   static PAYTEND_PARTNER_ID = "312006000004128";
 
   private static utf8Encode(data: string) {
-    return Buffer.from(data, "utf8");
+    return Buffer.from(data, "utf-8");
   }
 
   private static utf8Decode(data: Buffer) {
-    return data.toString("utf8");
+    return data.toString("utf-8");
   }
 
   private static base64Encode(bytes: Buffer) {
@@ -95,7 +95,7 @@ export class Paytend {
     const cipher = crypto.createCipheriv(ENCRYPT_ALGORITHM, key, null);
     cipher.setAutoPadding(true);
 
-    let encrypted = cipher.update(content, "utf8", "base64");
+    let encrypted = cipher.update(content, "utf-8", "base64");
     encrypted += cipher.final("base64");
 
     return encrypted;
@@ -109,8 +109,8 @@ export class Paytend {
     const decipher = crypto.createDecipheriv(DECRYPT_ALGORITHM, key, null);
     decipher.setAutoPadding(true);
 
-    let decrypted = decipher.update(content, "base64", "utf8");
-    decrypted += decipher.final("utf8");
+    let decrypted = decipher.update(content, "base64", "utf-8");
+    decrypted += decipher.final("utf-8");
 
     return decrypted;
   }
@@ -119,14 +119,13 @@ export class Paytend {
     const sign = crypto.createSign("SHA256");
     sign.update(content);
     const signature = sign.sign(this.PARTNER_PRIVATE_KEY_PEM, "base64");
-
     return signature;
   }
 
   private static verifyWithPublicKey(content: string, signature: string) {
     const verify = crypto.createVerify("SHA256");
     verify.update(content);
-    const publicKey = fs.readFileSync("./keys/partner_public.pem", "utf8");
+    const publicKey = fs.readFileSync("./keys/partner_public.pem", "utf-8");
     return verify.verify(publicKey, signature, "base64");
   }
 
@@ -151,9 +150,9 @@ export class Paytend {
     member: any;
   }) {
     try {
-      const aesKey = this.getRandomAESKey();
+      const aesKey = "lGqBz8CgnQ/XFYQRfaihJg==";
 
-      console.log("AES KEY:", aesKey);
+      console.log("AES KEY: ", aesKey);
 
       const body: Record<string, unknown> = {
         requestId: transactionId, // 32 characters long
@@ -173,11 +172,6 @@ export class Paytend {
 
       // The signature source string is composed of all non-empty field contents except the signature field, sorted according to the ASCII code of the message field, and connected with the "&" symbol in the manner of "field name = field value".
       body.signature = this.generateSignatureFromBody(body);
-
-      console.log(
-        "DECRYPTED ENCRYPTED BIZDATA:",
-        this.decrypt(this.encrypt(JSON.stringify(body.bizData), aesKey), aesKey)
-      );
 
       // Encrypted by randomly generated AES KEY.
       body.bizData = this.encrypt(JSON.stringify(body.bizData), aesKey);
