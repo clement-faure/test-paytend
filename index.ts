@@ -116,17 +116,16 @@ export class Paytend {
   }
 
   private static signWithPrivateKey(content: string) {
-    const sign = crypto.createSign("SHA256");
+    const sign = crypto.createSign("RSA-SHA256");
     sign.update(content);
     const signature = sign.sign(this.PARTNER_PRIVATE_KEY_PEM, "base64");
     return signature;
   }
 
   private static verifyWithPublicKey(content: string, signature: string) {
-    const verify = crypto.createVerify("SHA256");
+    const verify = crypto.createVerify("RSA-SHA256");
     verify.update(content);
-    const publicKey = fs.readFileSync("./keys/partner_public.pem", "utf-8");
-    return verify.verify(publicKey, signature, "base64");
+    return verify.verify(this.PARTNER_PUBLIC_KEY_PEM, signature, "base64");
   }
 
   private static generateSignatureFromBody(body: Record<string, unknown>) {
