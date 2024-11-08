@@ -88,9 +88,9 @@ export class Paytend {
   }
 
   private static encrypt(content: string, encryptKey: string) {
-    const ENCRYPT_ALGORITHM = "aes-128-ecb";
+    const ENCRYPT_ALGORITHM = "aes-192-ecb";
 
-    const key = Buffer.alloc(16, encryptKey, "utf-8");
+    const key = Buffer.from(encryptKey, "utf-8");
 
     const cipher = crypto.createCipheriv(ENCRYPT_ALGORITHM, key, null);
     cipher.setAutoPadding(true);
@@ -102,9 +102,9 @@ export class Paytend {
   }
 
   private static decrypt(content: string, encryptKey: string) {
-    const DECRYPT_ALGORITHM = "aes-128-ecb";
+    const DECRYPT_ALGORITHM = "aes-192-ecb";
 
-    const key = Buffer.alloc(16, encryptKey, "utf-8");
+    const key = Buffer.from(encryptKey, "utf-8");
 
     const decipher = crypto.createDecipheriv(DECRYPT_ALGORITHM, key, null);
     decipher.setAutoPadding(true);
