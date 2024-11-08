@@ -150,7 +150,8 @@ export class Paytend {
     member: any;
   }) {
     try {
-      const aesKey = "lGqBz8CgnQ/XFYQRfaihJg==";
+      // const aesKey = this.getRandomAESKey();
+      const aesKey = "lGqBz8CgnQ/XFYQRfaihJg=="; // FIXED AES KEY FOR TESTING
 
       console.log("AES KEY: ", aesKey);
 
